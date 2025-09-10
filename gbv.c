@@ -1,29 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "stdlib.h"
-
+#include <string.h>
+#include "util.h"
 #include "gbv.h"
 
 void gbv_complete(FILE *arquivo, Library *lib){
-    int bytes_lidos;
     int buffer;
 
-    bytes_lidos = fread(&buffer, sizeof(int), 1, arquivo);
-    if(bytes_lidos == 0){
-        // variavel auxiliar para indicar o numero que se deve escrever no inicio de buffer
-        lib->count = 0;
-        buffer = 0;
-        rewind(arquivo);
-        fwrite(&buffer, sizeof(int), 1, arquivo);
-    
-    } else{
-        lib->count = buffer;
-
-    }
+    fread(&buffer, sizeof(int), 1, arquivo);
+    lib->count = buffer;
 }
 
 // cria a biblioteca virtual em memoria
+// ??
 int gbv_create(const char *filename){
+    if(!filename){
+        return 1;
+    }
+    Library lib;
+    gbv_open(&lib, filename);
+    lib.docs = (Document *) malloc(lib.count*sizeof(Document));
+    
+    int buffer;
+    fread(&buffer, sizeof(int), 1, lib.arquivo);
+    lib.count = buffer;
+
     return 0;
 }
 
@@ -33,7 +34,13 @@ int gbv_open(Library *lib, const char *filename){
         return 1;
     }
 
-    FILE *conteiner = fopen(filename, "w+b");
+    FILE *conteiner = fopen(filename, "r+b");
+    if(!conteiner){
+        conteiner = fopen(filename, "w+b");
+        int buffer = 0;
+        fwrite(&buffer, sizeof(int), 1, conteiner);
+    }
+
     lib->arquivo = conteiner;
     if(!conteiner){
         printf("Não foi possível abrir o arquivo");
@@ -63,7 +70,7 @@ int gbv_list(const Library *lib){
     return 0;
 }
 
-//??
+//Visualiza os documentos segundo as especificações do enunciado
 int gbv_view(const Library *lib, const char *docname);
 //ordena os arquivos da biblioteca
 int gbv_order(Library *lib, const char *archive, const char *criteria){

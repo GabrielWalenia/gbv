@@ -17,15 +17,18 @@ int main(int argc, char *argv[]) {
         printf("Erro ao abrir biblioteca %s\n", biblioteca);
         return 1;
     }
-    int buffer = 0;
-    fwrite(&buffer, sizeof(int), 1, lib.arquivo);
-    rewind(lib.arquivo);
     
+    int buffer;
+    rewind(lib.arquivo);
     fread(&buffer, sizeof(int), 1, lib.arquivo);
     rewind(lib.arquivo);
-    printf("elementos: %d\n", buffer);
-    buffer++;
+    buffer = buffer+1;
     fwrite(&buffer, sizeof(int), 1, lib.arquivo);
     rewind(lib.arquivo);
-    return 0;
+    int aux;
+    fread(&aux, sizeof(int), 1, lib.arquivo);
+    printf("A quantidade de arquivos é %d\n", aux);
+
+    
+    
 }
