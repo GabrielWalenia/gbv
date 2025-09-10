@@ -55,9 +55,26 @@ int gbv_add(Library *lib, const char *archive, const char *docname);
 int gbv_remove(Library *lib, const char *docname);
 
 // lista os documentos da biblioteca
-int gbv_list(const Library *lib);
+int gbv_list(const Library *lib){
+    if(!lib)
+        return 1;
+    for(int i = 0; i<lib->count; i++)
+        printf("documento: %s\n", lib->docs[i].name);
+    return 0;
+}
 
 //??
 int gbv_view(const Library *lib, const char *docname);
 //ordena os arquivos da biblioteca
-int gbv_order(Library *lib, const char *archive, const char *criteria);
+int gbv_order(Library *lib, const char *archive, const char *criteria){
+    if(strcmp("nome", criteria)){
+        return 1;
+    }
+    if(strcmp("data", criteria)){
+        return 2;
+    }
+    if(strcmp("tamanho", criteria)){
+        return 3;
+    }
+    return -1;
+}
