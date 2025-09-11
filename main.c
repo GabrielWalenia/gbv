@@ -18,17 +18,18 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
-    int buffer;
-    rewind(lib.arquivo);
-    fread(&buffer, sizeof(int), 1, lib.arquivo);
-    rewind(lib.arquivo);
-    buffer = buffer+1;
-    fwrite(&buffer, sizeof(int), 1, lib.arquivo);
-    rewind(lib.arquivo);
-    int aux;
-    fread(&aux, sizeof(int), 1, lib.arquivo);
-    printf("A quantidade de arquivos é %d\n", aux);
+    // int buffer;
+    // rewind(lib.arquivo);
+    // fread(&buffer, sizeof(int), 1, lib.arquivo);
+    // rewind(lib.arquivo);
+    // buffer = buffer+1;
+    // fwrite(&buffer, sizeof(int), 1, lib.arquivo);
+    // rewind(lib.arquivo);
+    // int aux;
+    // fread(&aux, sizeof(int), 1, lib.arquivo);
+    // printf("A quantidade de arquivos é %d\n", aux);
 
-    
-    
+    //Document *doc = doc_create(argv[3]); 
+    //printf("Nome do arquivo:%s\n", doc->name);a
+    return 0;
 }
