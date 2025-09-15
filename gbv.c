@@ -5,6 +5,9 @@
 #include "util.h"
 #include "gbv.h"
 
+//Perguntar sobre a falta de um ponteiro FILE que referencie o arquivo da biblioteca
+//Perguntar sobre o modo View
+
 //função auxiliar para criar um documento
 Document *doc_create(const char *docname){
 
@@ -107,28 +110,44 @@ int gbv_open(Library *lib, const char *filename){
 
 // adiciona o arquivo na biblioteca
 int gbv_add(Library *lib, const char *archive, const char *docname){
-    
+    if(!lib || !archive || !docname)
+        return 1;
 
-    return 1;
+    return 0;
 }
 
 // remove o arquivo da biblioteca
 int gbv_remove(Library *lib, const char *docname){
+    if(!lib || !docname)
+        return 1;
 
-    return 1;
+    return 0;
 }
 
 // lista os documentos da biblioteca
 int gbv_list(const Library *lib){
     if(!lib)
         return 1;
-    for(int i = 0; i<lib->count; i++)
+    char buffer[BUFFER_SIZE];
+    for(int i = 0; i<lib->count; i++){
         printf("documento: %s\n", lib->docs[i].name);
+        format_date(lib->docs[i].date, buffer, BUFFER_SIZE);
+        printf("data: %s\n", buffer);
+        printf("tamanho: %ld\n", lib->docs[i].size);
+        printf("offset: %ld\n", lib->docs[i].offset);
+    }
     return 0;
 }
 
 //Visualiza os documentos segundo as especificações do enunciado
-int gbv_view(const Library *lib, const char *docname);
+int gbv_view(const Library *lib, const char *docname){
+    if(!lib || !docname)
+        return 1;
+    char buffer[BUFFER_SIZE];
+    char aux[BUFFER_SIZE];
+
+    return 0;
+}
 //ordena os arquivos da biblioteca
 int gbv_order(Library *lib, const char *archive, const char *criteria){
     if(strcmp("nome", criteria)){
