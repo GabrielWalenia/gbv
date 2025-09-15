@@ -18,6 +18,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
+    gbv_add(&lib, biblioteca, argv[3]);
+
     // int buffer;
     // rewind(lib.arquivo);
     // fread(&buffer, sizeof(int), 1, lib.arquivo);

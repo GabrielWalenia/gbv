@@ -5,28 +5,42 @@
 #include "util.h"
 #include "gbv.h"
 
-//Perguntar sobre a falta de um ponteiro FILE que referencie o arquivo da biblioteca
 //Perguntar sobre o modo View
-
 //função auxiliar para criar um documento
-Document *doc_create(const char *docname){
 
-    Document *doc = (Document *) malloc(sizeof(Document));
-    if(!doc){
-        printf("Não foi possível alocar memória!\n");
-        return NULL;
-    }
 
+Document doc_create(const char *docname, long offset){
+
+    // Document *doc = (Document *) malloc(sizeof(Document));
+    // if(!doc){
+    //     printf("Não foi possível alocar memória!\n");
+    //     return NULL;
+    // }
+
+
+    // struct stat buffer;
+    // stat(docname, &buffer);
+
+    // strcpy(doc->name, docname);
+    // doc->date = buffer.st_atime;
+    // doc->size = buffer.st_size;
+    // doc->offset = 0;
+
+    // return doc;
+
+    Document doc;
 
     struct stat buffer;
     stat(docname, &buffer);
 
-    strcpy(doc->name, docname);
-    doc->date = buffer.st_atime;
-    doc->size = buffer.st_size;
-    doc->offset = 0;
+    strcpy(doc.name, docname);
+    doc.date = buffer.st_atime;
+    doc.size = buffer.st_size;
+    doc.date = buffer.st_atime;
+    doc.offset = offset;
 
     return doc;
+
 }
 // funcao auxiliar para abrir documentos
 FILE *doc_open(const char *docname){
@@ -55,14 +69,13 @@ int gbv_create(const char *filename){
     if(!filename){
         return 1;
     }
-    // Library lib;
-    // gbv_open(&lib, filename);
-    // lib.docs = (Document *) malloc(lib.count*sizeof(Document));
-    
-    // int buffer;
-    // fread(&buffer, sizeof(int), 1, lib.arquivo);
-    // lib.count = buffer;
+    Library *lib = (Library *) malloc(sizeof(Library));
+    if(!lib)
+        return 2;
 
+    lib->docs = (Document *) malloc(sizeof(Document));
+
+    lib->count = 0;
     return 0;
 }
 
@@ -74,9 +87,10 @@ int gbv_open(Library *lib, const char *filename){
     }
 
     int quantidadeDocs = 0;
-    int offset = 2*sizeof(int);
+    int offset = 0;
 
     FILE *conteiner = fopen(filename, "r+b");
+
     if(!conteiner){
         conteiner = fopen(filename, "w+b");
         
@@ -101,9 +115,9 @@ int gbv_open(Library *lib, const char *filename){
         fread(&offset, sizeof(int), 1, conteiner);
 
         lib->count = quantidadeDocs;
-
     }
 
+    lib->arquivo = conteiner;
     return 0;
 
 }
@@ -112,8 +126,28 @@ int gbv_open(Library *lib, const char *filename){
 int gbv_add(Library *lib, const char *archive, const char *docname){
     if(!lib || !archive || !docname)
         return 1;
+    FILE *documento = fopen(docname, "r+b");
+    if(!documento)
+        return 2;
+
+    FILE *conteiner = lib->arquivo;
+
+    int quantidade, offset;
+    fread(&quantidade, sizeof(int), 1, archive);
+    fread(&offset, sizeof(int), 1, archive);
+
+    offset += quantidade*sizeof(int);
+
+    // ???
+    Document doc = doc_create(docname, offset);
+    
+
+
+    lib->count++;
+    
 
     return 0;
+
 }
 
 // remove o arquivo da biblioteca
