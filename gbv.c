@@ -63,20 +63,21 @@ void gbv_complete(FILE *arquivo, Library *lib){
     lib->count = buffer;
 }
 
-// cria a biblioteca virtual em memoria
-// ??
+// cria a biblioteca se ela não  existir
 int gbv_create(const char *filename){
-    if(!filename){
-        return 1;
-    }
-    Library *lib = (Library *) malloc(sizeof(Library));
-    if(!lib)
+
+    int quantidadeDocs = 0;
+    int offset = 0;
+
+    FILE *conteiner = fopen(filename, "w+b");
+    if(!conteiner){
+        printf("Não foi possível abrir o arquivo");
         return 2;
+    }
 
-    lib->docs = (Document *) malloc(sizeof(Document));
-
-    lib->count = 0;
-    return 0;
+    fwrite(&quantidadeDocs, sizeof(int), 1, conteiner);
+        
+    fwrite(&offset, sizeof(int), 1, conteiner);
 }
 
 // abre o arquivo da biblioteca
@@ -85,30 +86,18 @@ int gbv_open(Library *lib, const char *filename){
         printf("Parametros inválidos\n");
         return 1;
     }
-
+ 
     int quantidadeDocs = 0;
     int offset = 0;
 
     FILE *conteiner = fopen(filename, "r+b");
-
     if(!conteiner){
-        conteiner = fopen(filename, "w+b");
-        
-        if(!conteiner){
-            printf("Não foi possível abrir o arquivo");
-            return 2;
+        if(gbv_create(filename) == 0){
+            lib->docs = (Document *) malloc(sizeof(Document));
+            lib->count = 0;
         }
-
-        rewind(conteiner);
-        //numero de documentos na biblioteca
-        
-        fwrite(&quantidadeDocs, sizeof(int), 1, conteiner);
-        // Offset da área de diretorio (da posição atual ou do inicio do arquivo?)
-        // Estou considerando do inicio do arquivo
-        
-        fwrite(&offset, sizeof(int), 1, conteiner);
-
     } else {
+        printf("ja existe");
         rewind(conteiner);
 
         fread(&quantidadeDocs, sizeof(int), 1, conteiner);
@@ -117,9 +106,7 @@ int gbv_open(Library *lib, const char *filename){
         lib->count = quantidadeDocs;
     }
 
-    lib->arquivo = conteiner;
     return 0;
-
 }
 
 // adiciona o arquivo na biblioteca
@@ -130,7 +117,7 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
     if(!documento)
         return 2;
 
-    FILE *conteiner = lib->arquivo;
+    FILE *conteiner;
 
     int quantidade, offset;
     fread(&quantidade, sizeof(int), 1, archive);

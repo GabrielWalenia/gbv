@@ -18,7 +18,7 @@ typedef struct {
 typedef struct {
     Document *docs;        // vetor dinâmico de documentos
     int count;             // número de documentos
-    FILE *arquivo;
+    
 } Library;
 
 // Funções que voce deve implementar em gbv.c
