@@ -18,7 +18,7 @@ typedef struct {
 typedef struct {
     Document *docs;        // vetor dinâmico de documentos
     int count;             // número de documentos
-    FILE *arquivo;
+    
 } Library;
 
 // Funções que voce deve implementar em gbv.c
@@ -31,4 +31,3 @@ int gbv_view(const Library *lib, const char *docname);
 int gbv_order(Library *lib, const char *archive, const char *criteria);
 //Document *doc_create(const char *docname);
 #endif
-
