@@ -26,19 +26,6 @@ Document doc_create(const char *docname, long offset){
     return doc;
 
 }
-// funcao auxiliar para abrir documentos
-FILE *doc_open(const char *docname){
-    if(!docname)
-        return NULL;
-
-    FILE *doc = fopen(docname, "r+b");
-    if(!doc){
-        printf("Não foi possível abrir o arquivo!\n");
-        return NULL;
-    }
-
-    return doc;
-}
 
 // cria a biblioteca se ela não  existir
 int gbv_create(const char *filename){
@@ -87,6 +74,8 @@ int gbv_open(Library *lib, const char *filename){
         lib->count = quantidadeDocs;
     }
 
+    //fclose(conteiner);
+
     return 0;
 }
 
@@ -116,7 +105,7 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
             soma+= lib->docs[i].size;
         }
         // pula a quantidade, o offset e o total dos tamanhos dos arquivos
-        doc = doc_create(docname, sizeof(int) + sizeof(long)+soma);
+        doc = doc_create(docname, sizeof(int) + sizeof(long) + soma);
     }
 
     lib->docs[lib->count] = doc;
@@ -139,7 +128,7 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
         fwrite(&(lib->docs[0]), sizeof(Document), 1, biblioteca);
 
     } else{
-        
+
         // Aqui tem um segmentation fault
         fseek(biblioteca, sizeof(int)+sizeof(long)+soma, SEEK_SET);
         
@@ -169,8 +158,8 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
     fwrite(&quantidadeDocs, sizeof(int), 1, biblioteca);
     fwrite(&offset, sizeof(long), 1, biblioteca);
 
-    fclose(documento);
-    fclose(biblioteca);
+    //fclose(documento);
+    //fclose(biblioteca);
 
     return 0;
 

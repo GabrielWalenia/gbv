@@ -24,11 +24,11 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    gbv_list(&lib);
+    //gbv_list(&lib);
 
-    for (int i = 3; i < argc; i++) {
-        gbv_remove(&lib, argv[i]);
-    }
+    //for (int i = 3; i < argc; i++) {
+    //    gbv_remove(&lib, argv[i]);
+    //}
     // int buffer;
     // rewind(lib.arquivo);
     // fread(&buffer, sizeof(int), 1, lib.arquivo);
@@ -40,7 +40,5 @@ int main(int argc, char *argv[]) {
     // fread(&aux, sizeof(int), 1, lib.arquivo);
     // printf("A quantidade de arquivos é %d\n", aux);
 
-    //Document *doc = doc_create(argv[3]); 
-    //printf("Nome do arquivo:%s\n", doc->name);a
     return 0;
 }
