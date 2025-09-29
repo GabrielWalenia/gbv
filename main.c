@@ -18,8 +18,17 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
-    gbv_add(&lib, biblioteca, argv[3]);
+    if (strcmp(opcao, "-a") == 0) {
+        for (int i = 3; i < argc; i++) {
+            gbv_add(&lib, biblioteca, argv[i]);
+        }
+    }
 
+    gbv_list(&lib);
+
+    for (int i = 3; i < argc; i++) {
+        gbv_remove(&lib, argv[i]);
+    }
     // int buffer;
     // rewind(lib.arquivo);
     // fread(&buffer, sizeof(int), 1, lib.arquivo);
