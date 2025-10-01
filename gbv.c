@@ -5,9 +5,10 @@
 #include "util.h"
 #include "gbv.h"
 
-//Perguntar sobre o modo View
-//Perguntar sobre o segmentation fault
-//Perguntar sobre o offset
+
+//Perguntar se pode colocar uma struct representando o documento na memória 
+//Perguntar sobre a função fread e fwrite
+
 
 //função auxiliar para criar um documento
 Document doc_create(const char *docname, long offset){
@@ -46,6 +47,11 @@ int gbv_create(const char *filename){
     return 0;
 }
 
+int gbv_close(FILE *arquivo){
+    fclose(arquivo);
+    return 0;
+}
+
 // abre o arquivo da biblioteca
 int gbv_open(Library *lib, const char *filename){
     if(!filename || !lib){
@@ -60,6 +66,10 @@ int gbv_open(Library *lib, const char *filename){
     if(!conteiner){
         if(gbv_create(filename) == 0){
             lib->docs = (Document *) malloc(sizeof(Document));
+            if(!lib->docs){
+                printf("Falha ao alocar memória\n");
+                return 3;
+            }
             lib->count = 0;
         }else{
             return 2;
@@ -74,13 +84,14 @@ int gbv_open(Library *lib, const char *filename){
         lib->count = quantidadeDocs;
     }
 
-    //fclose(conteiner);
+    // fclose(conteiner);
 
     return 0;
 }
 
 // adiciona o arquivo na biblioteca
 int gbv_add(Library *lib, const char *archive, const char *docname){
+    
     if(!lib || !archive || !docname){
         printf("Paramêtros inválidos");
         return 1;
@@ -108,10 +119,17 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
         doc = doc_create(docname, sizeof(int) + sizeof(long) + soma);
     }
 
+
+    if(lib->count>0){
+        lib->docs = realloc(lib->docs, (1+lib->count)*sizeof(Document));
+    }
     lib->docs[lib->count] = doc;
     
     char *buffer = (char *)malloc(BUFFER_SIZE);
     char *aux = (char *) malloc(BUFFER_SIZE);
+
+
+
     //se a biblioteca está vazia, cria a area de dados e o diretorio
     if(lib->count == 0){
 
@@ -122,27 +140,23 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
             fwrite(buffer, 1, BUFFER_SIZE, biblioteca);
         }
 
-        
-        fseek(biblioteca, 0, SEEK_END);
-
         fwrite(&(lib->docs[0]), sizeof(Document), 1, biblioteca);
 
     } else{
 
-        // Aqui tem um segmentation fault
-        fseek(biblioteca, sizeof(int)+sizeof(long)+soma, SEEK_SET);
-        
-        printf("%ld", ftell(biblioteca));
-        //carregando para dentro de aux o vetor dos documentos
-        fread(aux, lib->count*sizeof(Document), 1, biblioteca);
+        fseek(biblioteca, -(lib->count * sizeof(Document)), SEEK_END);
 
-        fseek(biblioteca, sizeof(int) + sizeof(long)+soma, SEEK_SET);
+        //carregando para dentro de aux o vetor dos documentos
+        fread(aux, sizeof(Document), lib->count, biblioteca);
+
+        fseek(biblioteca, -(lib->count * sizeof(Document)), SEEK_END);
         while(!feof(documento)){
             fread(buffer, 1, BUFFER_SIZE, documento);
             fwrite(buffer, 1, BUFFER_SIZE, biblioteca);
         }
 
-        fwrite(aux, lib->count*sizeof(Document),1, biblioteca);
+        fwrite(aux, sizeof(Document),lib->count, biblioteca);
+
         fwrite(&(lib->docs[lib->count]), sizeof(Document), 1, biblioteca);
     }
 
@@ -152,14 +166,18 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
     lib->count++;
 
     int quantidadeDocs = lib->count;
-    int offset = sizeof(int) + sizeof(long) + lib->docs[lib->count-1].size;
-    
-    fseek(biblioteca, 0, SEEK_SET);
+    int offset = sizeof(int) + sizeof(long) + soma + lib->docs[lib->count].size;
+
+    rewind(biblioteca);
+
     fwrite(&quantidadeDocs, sizeof(int), 1, biblioteca);
     fwrite(&offset, sizeof(long), 1, biblioteca);
 
-    //fclose(documento);
-    //fclose(biblioteca);
+
+    // fclose(documento);
+    // fclose(biblioteca);
+
+
 
     return 0;
 

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "gbv.h"
 
@@ -7,7 +8,6 @@ int main(int argc, char *argv[]) {
         printf("Uso: %s <opção> <biblioteca> [documentos...]\n", argv[0]);
         return 1;
     }
-
 
     const char *opcao = argv[1];
     const char *biblioteca = argv[2];
@@ -24,21 +24,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    //gbv_list(&lib);
-
-    //for (int i = 3; i < argc; i++) {
-    //    gbv_remove(&lib, argv[i]);
-    //}
-    // int buffer;
-    // rewind(lib.arquivo);
-    // fread(&buffer, sizeof(int), 1, lib.arquivo);
-    // rewind(lib.arquivo);
-    // buffer = buffer+1;
-    // fwrite(&buffer, sizeof(int), 1, lib.arquivo);
-    // rewind(lib.arquivo);
-    // int aux;
-    // fread(&aux, sizeof(int), 1, lib.arquivo);
-    // printf("A quantidade de arquivos é %d\n", aux);
+        printf("ahjdsfhihfohfa\n");
 
     return 0;
 }
