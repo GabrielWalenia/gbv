@@ -127,7 +127,7 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
     
     char *buffer = (char *)malloc(BUFFER_SIZE);
     char *aux = (char *) malloc(BUFFER_SIZE);
-
+    int bytes = 0;
 
 
     //se a biblioteca está vazia, cria a area de dados e o diretorio
@@ -136,8 +136,8 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
         fseek(biblioteca, sizeof(int) + sizeof(long), SEEK_SET);
 
         while(!feof(documento)){
-            fread(buffer, 1, BUFFER_SIZE, documento);
-            fwrite(buffer, 1, BUFFER_SIZE, biblioteca);
+            bytes = fread(buffer, 1, BUFFER_SIZE, documento);
+            fwrite(buffer, 1, bytes, biblioteca);
         }
 
         fwrite(&(lib->docs[0]), sizeof(Document), 1, biblioteca);
@@ -151,8 +151,8 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
 
         fseek(biblioteca, -(lib->count * sizeof(Document)), SEEK_END);
         while(!feof(documento)){
-            fread(buffer, 1, BUFFER_SIZE, documento);
-            fwrite(buffer, 1, BUFFER_SIZE, biblioteca);
+            bytes = fread(buffer, 1, BUFFER_SIZE, documento);
+            fwrite(buffer, 1, bytes, biblioteca);
         }
 
         fwrite(aux, sizeof(Document),lib->count, biblioteca);
@@ -173,12 +173,6 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
     fwrite(&quantidadeDocs, sizeof(int), 1, biblioteca);
     fwrite(&offset, sizeof(long), 1, biblioteca);
 
-
-    // fclose(documento);
-    // fclose(biblioteca);
-
-
-
     return 0;
 
 }
@@ -186,31 +180,38 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
 // remove o arquivo da biblioteca
 int gbv_remove(Library *lib, const char *docname){
     if(!lib || !docname){
-        printf("Paramêtros inválidos");
+        printf("Parâmetros inválidos!\n");
         return 1;
     }
+
     if(lib->count <= 0){
-        printf("Biblioteca vazia!");
+        printf("Biblioteca vazia!\n");
         return 2;
     }
 
-    //acha o documento que precisa ser retirado
-    int i = 0;
-    while(strcmp(lib->docs[i].name, docname)!=0){
-        i++;
-        if(i>lib->count){
-            printf("Documento não existe na biblioteca");
-            return 3;
+    // itera pelo vetor de documentos para achar um que tenha o mesmo nome
+    int i;
+    for(i = 0; i < lib->count ; i++){
+        //se o nome é igual, sai do loop
+        if(strcmp(lib->docs[i].name, docname) == 0){
+            break;
         }
     }
 
-    int j = i;
-    while(j<lib->count){
-        lib->docs[j] = lib->docs[j+1];
+    if(i>=lib->count){
+        printf("Documento não existe no vetor!\n");
+        return 3;
     }
-    
+
+    if(lib->count > 1){
+        
+        Document doc = lib->docs[i];
+        lib->docs[i] = lib->docs[lib->count-1];
+        lib->docs[lib->count-1] = doc;
+        
+    }
+
     lib->count--;
-    return 0;
 }
 
 // lista os documentos da biblioteca
