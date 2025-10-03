@@ -34,21 +34,16 @@ int gbv_create(const char *filename){
     int quantidadeDocs = 0;
     long offset = 0;
 
-    FILE *conteiner = fopen(filename, "w+b");
-    if(!conteiner){
+    FILE *biblioteca = fopen(filename, "w+b");
+    if(!biblioteca){
         printf("Não foi possível abrir o arquivo");
         return 2;
     }
 
-    fwrite(&quantidadeDocs, sizeof(int), 1, conteiner);
+    fwrite(&quantidadeDocs, sizeof(int), 1, biblioteca);
         
-    fwrite(&offset, sizeof(long), 1, conteiner);
+    fwrite(&offset, sizeof(long), 1, biblioteca);
 
-    return 0;
-}
-
-int gbv_close(FILE *arquivo){
-    fclose(arquivo);
     return 0;
 }
 
@@ -62,26 +57,29 @@ int gbv_open(Library *lib, const char *filename){
     int quantidadeDocs = 0;
     long offset = 0;
 
-    FILE *conteiner = fopen(filename, "r+b");
-    if(!conteiner){
+    lib->docs = (Document *) malloc(sizeof(Document));
+    if(!lib->docs){
+        printf("Falha ao alocar memória\n");
+        return 3;
+    }
+    
+    FILE *biblioteca = fopen(filename, "r+b");
+    if(!biblioteca){
         if(gbv_create(filename) == 0){
-            lib->docs = (Document *) malloc(sizeof(Document));
-            if(!lib->docs){
-                printf("Falha ao alocar memória\n");
-                return 3;
-            }
+            
             lib->count = 0;
         }else{
             return 2;
         }
     } else {
-        // printf("ja existe");
-        rewind(conteiner);
+        printf("ja existe\n");
+        rewind(biblioteca);
 
-        fread(&quantidadeDocs, sizeof(int), 1, conteiner);
-        fread(&offset, sizeof(long), 1, conteiner);
+        fread(&quantidadeDocs, sizeof(int), 1, biblioteca);
+        fread(&offset, sizeof(long), 1, biblioteca);
 
         lib->count = quantidadeDocs;
+        printf("%d\n", lib->count);
     }
 
     // fclose(conteiner);
@@ -105,6 +103,7 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
         return 2;
     }
 
+
     Document doc;
     long soma = 0;
 
@@ -123,8 +122,9 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
     if(lib->count>0){
         lib->docs = realloc(lib->docs, (1+lib->count)*sizeof(Document));
     }
+    printf("ahjdsfhihfohfa\n");
     lib->docs[lib->count] = doc;
-    
+        
     char *buffer = (char *)malloc(BUFFER_SIZE);
     char *aux = (char *) malloc(BUFFER_SIZE);
     int bytes = 0;
@@ -165,12 +165,11 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
 
     lib->count++;
 
-    int quantidadeDocs = lib->count;
     int offset = sizeof(int) + sizeof(long) + soma + lib->docs[lib->count].size;
 
     rewind(biblioteca);
 
-    fwrite(&quantidadeDocs, sizeof(int), 1, biblioteca);
+    fwrite(&(lib->count), sizeof(int), 1, biblioteca);
     fwrite(&offset, sizeof(long), 1, biblioteca);
 
     return 0;
@@ -212,12 +211,20 @@ int gbv_remove(Library *lib, const char *docname){
     }
 
     lib->count--;
+
+    return 0;
 }
 
 // lista os documentos da biblioteca
 int gbv_list(const Library *lib){
     if(!lib)
         return 1;
+
+    if(lib->count <= 0){
+        printf("Biblioteca vazia!\n");
+        return 2;
+    }
+
     char buffer[BUFFER_SIZE];
     for(int i = 0; i<lib->count; i++){
         printf("documento: %s\n", lib->docs[i].name);

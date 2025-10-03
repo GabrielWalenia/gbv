@@ -24,13 +24,17 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    gbv_list(&lib);
 
-    gbv_remove(&lib, argv[3]);
+
+    // gbv_list(&lib);
+
+    // for (int i = 3; i < argc; i++) {
+    //     gbv_remove(&lib, argv[i]);
+    // }
     
-    gbv_list(&lib);
+    // gbv_list(&lib);
 
-    printf("ahjdsfhihfohfa\n");
+
 
     return 0;
 }
