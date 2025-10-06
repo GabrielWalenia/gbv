@@ -18,13 +18,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (strcmp(opcao, "-a") == 0) {
-        for (int i = 3; i < argc; i++) {
-            gbv_add(&lib, biblioteca, argv[i]);
-        }
-    }
+    // if (strcmp(opcao, "-a") == 0) {
+    //     for (int i = 3; i < argc; i++) {
+    //         gbv_add(&lib, biblioteca, argv[i]);
+    //     }
+    // }
 
-
+    gbv_view(&lib, argv[3]);
 
     // gbv_list(&lib);
 
