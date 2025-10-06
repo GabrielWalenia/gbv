@@ -7,9 +7,6 @@
 #include "gbv.h"
 
 
-//Perguntar se pode colocar uma struct representando o documento na memória 
-//Perguntar sobre a função fread e fwrite
-
 
 //função auxiliar para criar um documento
 Document doc_create(const char *docname, long offset){
@@ -73,9 +70,10 @@ int gbv_open(Library *lib, const char *filename){
         }
 
     } else {
-        // printf("shdiapfhdsaihf\n");
-        fseek(biblioteca, 0, SEEK_SET);
+        // abre a biblioteca, lê a quantidade de Documentos e o offset
 
+        fseek(biblioteca, 0, SEEK_SET);
+        
         fread(&quantidadeDocs, sizeof(int), 1, biblioteca);
         fread(&offset, sizeof(long), 1, biblioteca);
 
@@ -90,7 +88,7 @@ int gbv_open(Library *lib, const char *filename){
 
         fseek(biblioteca, -(lib->count * sizeof(Document)), SEEK_END);
         // fread(&(lib->docs), sizeof(Document), quantidadeDocs, biblioteca);
-        printf("ajpfodapfjaops\n");
+        // printf("ajpfodapfjaops\n");
     }
 
 
@@ -118,7 +116,7 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
     bool existeDocumento = false;
     int cont;
      
-    printf("%d\n", lib->count);
+    // printf("%d\n", lib->count);
     // printf("%s\n", lib->docs[0].name);
 
     // Verifica se o documento já existe na biblioteca
@@ -136,12 +134,14 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
         doc = doc_create(docname, sizeof(int) + sizeof(long));
     else{
         if(!existeDocumento){
-            // e se o arquivo aberto pela primeira vez já tiver documentos?
+
             for(int i = 0; i<lib->count; i++){
                 soma+= lib->docs[i].size;
             }
+
             // pula a quantidade, o offset e o total dos tamanhos dos arquivos
             doc = doc_create(docname, sizeof(int) + sizeof(long) + soma);
+
         } else {
             doc = doc_create(docname, lib->docs[cont].offset);
         }
@@ -153,7 +153,7 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
         if(!lib->docs){
             printf("Não foi possível alocar memória!\n");
             return 3;
-    }
+        }
     }
 
         
@@ -169,7 +169,6 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
     //se a biblioteca está vazia, cria a area de dados e o diretorio
     if(lib->count == 0){
 
-        // aqui tem um problema
         lib->docs[lib->count] = doc;
 
         fseek(biblioteca, sizeof(int) + sizeof(long), SEEK_SET);
@@ -209,6 +208,7 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
             }
 
             fseek(biblioteca, offsetDocumento, SEEK_SET);
+
             while(!feof(documento)){
                 bytes = fread(buffer, 1, BUFFER_SIZE, documento);
                 fwrite(buffer, 1, bytes, biblioteca);
@@ -226,7 +226,7 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
             return 0;
 
         }else{
-
+            // Senão, o documento é inserido normalmente
             lib->docs[lib->count] = doc;
 
             fseek(biblioteca, -(lib->count * sizeof(Document)), SEEK_END);
@@ -235,6 +235,7 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
             fread(aux, sizeof(Document), lib->count, biblioteca);
 
             fseek(biblioteca, -(lib->count * sizeof(Document)), SEEK_END);
+
             while(!feof(documento)){
                 bytes = fread(buffer, 1, BUFFER_SIZE, documento);
                 fwrite(buffer, 1, bytes, biblioteca);
@@ -244,7 +245,6 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
 
             fwrite(&(lib->docs[lib->count]), sizeof(Document), 1, biblioteca);
 
-                    
             free(aux);
         }
 
@@ -252,24 +252,16 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
 
     free(buffer);
 
-
     rewind(biblioteca);
     printf("Lib->count anterior: %d\n", lib->count);
 
     lib->count = lib->count + 1;
-    bytes = fwrite(&(lib->count), sizeof(int), 1, biblioteca);
-
-    printf("Escreveu %d blocos\n", bytes);
+    fwrite(&(lib->count), sizeof(int), 1, biblioteca);
 
     int offset = sizeof(int) + sizeof(long) + soma + lib->docs[lib->count].size;
     fwrite(&offset, sizeof(long), 1, biblioteca);
 
-    printf("%d\n", lib->count);
-    
-
-
     return 0;
-
 }
 
 // remove o arquivo da biblioteca
@@ -322,6 +314,7 @@ int gbv_list(const Library *lib){
     }
 
     char buffer[BUFFER_SIZE];
+
     for(int i = 0; i<lib->count; i++){
         printf("documento: %s\n", lib->docs[i].name);
         format_date(lib->docs[i].date, buffer, BUFFER_SIZE);
@@ -329,11 +322,13 @@ int gbv_list(const Library *lib){
         printf("tamanho: %ld\n", lib->docs[i].size);
         printf("offset: %ld\n", lib->docs[i].offset);
     }
+
     return 0;
 }
 
 //Visualiza os documentos segundo as especificações do enunciado
 int gbv_view(const Library *lib, const char *docname){
+
     if(!lib || !docname)
         return 1;
     
@@ -351,8 +346,8 @@ int gbv_view(const Library *lib, const char *docname){
     printf("n -> Próximo bloco\n");
     printf("p -> Bloco anterior\n");
     printf("q -> sair da vizualização\n");
-
-    char *opcao = (char *) malloc(1);
+    
+    char opcao;
     char *buffer = (char *) malloc(BUFFER_SIZE);
 
     printf("Exibindo conteudo do documento:\n");
@@ -361,24 +356,25 @@ int gbv_view(const Library *lib, const char *docname){
 
     while(!feof(documento)){
         
-        scanf("Opcao: %s", opcao);
-        if (strcmp(opcao, "n") == 0){
+        opcao = getchar();
+        if (opcao == 'n'){
             fread(buffer, 1, BUFFER_SIZE, documento);
             printf("%s\n", buffer);
-        } else if(strcmp(opcao, "p") == 0){
+        } else if(opcao == 'p'){
             fseek(documento, -2*BUFFER_SIZE, SEEK_CUR);
             fread(buffer, 1, BUFFER_SIZE, documento);
             printf("%s\n", buffer);
         }
-        else if(strcmp(opcao, "q") == 0){
+        else if(opcao == 'q'){
             break;
-        } else{
-            printf("Opção inválida!\n");
+        } else if (opcao != 'q' && opcao != 'p' && opcao != 'n' ){
+            printf("ERRO Opção inválida!\n");
         }
+        getchar() ;  
     }
 
     free(buffer);
-    free(opcao);
+    
     return 0;
 }
 
