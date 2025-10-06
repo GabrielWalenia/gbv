@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <stdbool.h>
 #include "util.h"
 #include "gbv.h"
 
@@ -31,18 +32,11 @@ Document doc_create(const char *docname, long offset){
 // cria a biblioteca se ela não  existir
 int gbv_create(const char *filename){
 
-    int quantidadeDocs = 0;
-    long offset = 0;
-
     FILE *biblioteca = fopen(filename, "w+b");
     if(!biblioteca){
-        printf("Não foi possível abrir o arquivo");
+        printf("Não foi possível abrir o arquivo\n");
         return 2;
     }
-
-    fwrite(&quantidadeDocs, sizeof(int), 1, biblioteca);
-        
-    fwrite(&offset, sizeof(long), 1, biblioteca);
 
     return 0;
 }
@@ -57,32 +51,49 @@ int gbv_open(Library *lib, const char *filename){
     int quantidadeDocs = 0;
     long offset = 0;
 
-    lib->docs = (Document *) malloc(sizeof(Document));
-    if(!lib->docs){
-        printf("Falha ao alocar memória\n");
-        return 3;
-    }
     
+        
     FILE *biblioteca = fopen(filename, "r+b");
+    // Se a biblioteca não foi aberta, significa que não há biblioteca
     if(!biblioteca){
+        // tenta criar biblioteca
         if(gbv_create(filename) == 0){
-            
+            //sucesso
             lib->count = 0;
+
+            lib->docs = (Document *) malloc(sizeof(Document));
+            if(!lib->docs){
+                printf("Falha ao alocar memória\n");
+                return 3;
+            }
         }else{
+            //erro
+            printf("Não foi possível criar a biblioteca!\n");
             return 2;
         }
+
     } else {
-        printf("ja existe\n");
-        rewind(biblioteca);
+        // printf("shdiapfhdsaihf\n");
+        fseek(biblioteca, 0, SEEK_SET);
 
         fread(&quantidadeDocs, sizeof(int), 1, biblioteca);
         fread(&offset, sizeof(long), 1, biblioteca);
 
         lib->count = quantidadeDocs;
-        printf("%d\n", lib->count);
+        
+       
+        lib->docs = (Document *) malloc(lib->count*sizeof(Document));
+        if(!lib->docs){
+            printf("Não foi possível alocar memória!\n");
+            return 3;
+        }
+
+        fseek(biblioteca, -(lib->count * sizeof(Document)), SEEK_END);
+        // fread(&(lib->docs), sizeof(Document), quantidadeDocs, biblioteca);
+        printf("ajpfodapfjaops\n");
     }
 
-    // fclose(conteiner);
+
 
     return 0;
 }
@@ -104,6 +115,20 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
     }
 
 
+    bool existeDocumento = false;
+    int cont;
+     
+    printf("%d\n", lib->count);
+    // printf("%s\n", lib->docs[0].name);
+
+    // Verifica se o documento já existe na biblioteca
+    for(cont = 0; cont<lib->count; cont++){
+        if(strcmp(lib->docs[cont].name, docname) == 0){
+            existeDocumento = true;
+            break;
+        }
+    }
+
     Document doc;
     long soma = 0;
 
@@ -119,19 +144,29 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
     }
 
 
-    if(lib->count>0){
+    if(lib->count>0 && !existeDocumento){
         lib->docs = realloc(lib->docs, (1+lib->count)*sizeof(Document));
+        if(!lib->docs){
+            printf("Não foi possível alocar memória!\n");
+            return 3;
     }
-    printf("ahjdsfhihfohfa\n");
-    lib->docs[lib->count] = doc;
+    }
+
         
     char *buffer = (char *)malloc(BUFFER_SIZE);
-    char *aux = (char *) malloc(BUFFER_SIZE);
+    if(!buffer){
+        printf("Não foi possível alocar memória!\n");
+        return 3;
+    }
+
     int bytes = 0;
 
 
     //se a biblioteca está vazia, cria a area de dados e o diretorio
     if(lib->count == 0){
+
+        // aqui tem um problema
+        lib->docs[lib->count] = doc;
 
         fseek(biblioteca, sizeof(int) + sizeof(long), SEEK_SET);
 
@@ -144,33 +179,84 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
 
     } else{
 
-        fseek(biblioteca, -(lib->count * sizeof(Document)), SEEK_END);
-
-        //carregando para dentro de aux o vetor dos documentos
-        fread(aux, sizeof(Document), lib->count, biblioteca);
-
-        fseek(biblioteca, -(lib->count * sizeof(Document)), SEEK_END);
-        while(!feof(documento)){
-            bytes = fread(buffer, 1, BUFFER_SIZE, documento);
-            fwrite(buffer, 1, bytes, biblioteca);
+        Document *aux = (Document *) malloc(lib->count * BUFFER_SIZE);
+        if(!aux){
+            printf("Não foi possível alocar memória!\n");
+            return 3;
         }
 
-        fwrite(aux, sizeof(Document),lib->count, biblioteca);
+        // Se existe o documento, este é substituido
+        if(existeDocumento){
+            printf("Entrou no if\n");
+            fseek(biblioteca, -(lib->count * sizeof(Document)), SEEK_END);
 
-        fwrite(&(lib->docs[lib->count]), sizeof(Document), 1, biblioteca);
+            //carregando para dentro de aux o vetor dos documentos
+            fread(aux, sizeof(Document), lib->count, biblioteca);
+
+            for(int j = 0; j<lib->count; j++){
+                // substitui a struct antiga pela nova
+                if(cont == j){
+                    lib->docs[j] = doc;
+                } else{
+                    lib->docs[j] = aux[j];
+                }
+            }
+
+            fseek(biblioteca, -(lib->count * sizeof(Document)), SEEK_END);
+            while(!feof(documento)){
+                bytes = fread(buffer, 1, BUFFER_SIZE, documento);
+                fwrite(buffer, 1, bytes, biblioteca);
+            }
+
+            fwrite(aux, sizeof(Document),lib->count, biblioteca);
+
+            free(buffer);
+            free(aux);
+
+            return 0;
+
+        }else{
+
+            lib->docs[lib->count] = doc;
+
+            fseek(biblioteca, -(lib->count * sizeof(Document)), SEEK_END);
+
+            //carregando para dentro de aux o vetor dos documentos
+            fread(aux, sizeof(Document), lib->count, biblioteca);
+
+            fseek(biblioteca, -(lib->count * sizeof(Document)), SEEK_END);
+            while(!feof(documento)){
+                bytes = fread(buffer, 1, BUFFER_SIZE, documento);
+                fwrite(buffer, 1, bytes, biblioteca);
+            }
+
+            fwrite(aux, sizeof(Document),lib->count, biblioteca);
+
+            fwrite(&(lib->docs[lib->count]), sizeof(Document), 1, biblioteca);
+
+                    
+            free(aux);
+        }
+
     }
 
     free(buffer);
-    free(aux);
 
-    lib->count++;
-
-    int offset = sizeof(int) + sizeof(long) + soma + lib->docs[lib->count].size;
 
     rewind(biblioteca);
+    printf("Lib->count anterior: %d\n", lib->count);
 
-    fwrite(&(lib->count), sizeof(int), 1, biblioteca);
+    lib->count = lib->count + 1;
+    bytes = fwrite(&(lib->count), sizeof(int), 1, biblioteca);
+
+    printf("Escreveu %d blocos\n", bytes);
+
+    int offset = sizeof(int) + sizeof(long) + soma + lib->docs[lib->count].size;
     fwrite(&offset, sizeof(long), 1, biblioteca);
+
+    printf("%d\n", lib->count);
+    
+
 
     return 0;
 

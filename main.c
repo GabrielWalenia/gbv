@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
         printf("Erro ao abrir biblioteca %s\n", biblioteca);
         return 1;
     }
-    
+
     if (strcmp(opcao, "-a") == 0) {
         for (int i = 3; i < argc; i++) {
             gbv_add(&lib, biblioteca, argv[i]);
