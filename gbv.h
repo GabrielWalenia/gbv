@@ -29,5 +29,5 @@ int gbv_remove(Library *lib, const char *docname);
 int gbv_list(const Library *lib);
 int gbv_view(const Library *lib, const char *docname);
 int gbv_order(Library *lib, const char *archive, const char *criteria);
-//Document *doc_create(const char *docname);
+
 #endif
