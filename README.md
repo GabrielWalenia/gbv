@@ -1,6 +1,4 @@
 # gbv
-Gabriel Antonio Walenia
-GRR20243090
 
 Problemas com o código: 
 A função remove foi dificil de fazer e ela só funciona satisfatoriamente com arquivos pequenos
