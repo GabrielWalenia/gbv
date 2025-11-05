@@ -8,19 +8,14 @@
 
 const char *gbv;
 
-//Perguntar se pode colocar uma struct representando o documento na memória 
-//Perguntar sobre a função fread e fwrite
 
-
-//função auxiliar para criar um documento
-
-int mover(Library *lib, FILE  *arquivo, size_t inicio, size_t fim, long deslocamento){
+// mover blocos em um arquivo
+int mover(FILE  *arquivo, size_t inicio, size_t fim, long deslocamento){
     if(!arquivo){
         printf("ERRO!\n");
         exit(1);
     }
-    printf("%lu\n", inicio);
-    printf("%lu\n", fim);
+
     char *buffer = (char *) malloc(BUFFER_SIZE); 
     if(!buffer){
         printf("Não foi possível alocar memória!");
@@ -70,16 +65,24 @@ int mover(Library *lib, FILE  *arquivo, size_t inicio, size_t fim, long deslocam
     return 0;
 }
 
-
+// Funcao auxiliar que retorna a struct documento com os status
 Document doc_create(const char *docname, long offset){
-
+    
     Document doc;
+
+    if(!docname){
+        strcpy(doc.name, "");
+        doc.size = 0;
+        doc.date = 0;
+        doc.offset = offset;
+
+        return doc;
+    }
 
     struct stat buffer;
     stat(docname, &buffer);
 
     strcpy(doc.name, docname);
-    doc.date = buffer.st_atime;
     doc.size = buffer.st_size;
     doc.date = buffer.st_atime;
     doc.offset = offset;
@@ -132,15 +135,14 @@ int gbv_open(Library *lib, const char *filename){
         }
 
     } else {
-        // printf("shdiapfhdsaihf\n");
+    
         fseek(biblioteca, 0, SEEK_SET);
 
         fread(&quantidadeDocs, sizeof(int), 1, biblioteca);
         fread(&offset, sizeof(long), 1, biblioteca);
 
         lib->count = quantidadeDocs;
-        
-       
+           
         lib->docs = (Document *) malloc(lib->count*sizeof(Document));
         if(!lib->docs){
             printf("Não foi possível alocar memória!\n");
@@ -181,9 +183,6 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
     bool existeDocumento = false;
     int cont;
      
-    // printf("%d\n", lib->count);
-    // printf("%s\n", lib->docs[0].name);
-
     // Verifica se o documento já existe na biblioteca
     for(cont = 0; cont<lib->count; cont++){
         if(strcmp(lib->docs[cont].name, docname) == 0){
@@ -199,7 +198,7 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
         doc = doc_create(docname, sizeof(int) + sizeof(long));
     else{
         if(!existeDocumento){
-            // e se o arquivo aberto pela primeira vez já tiver documentos?
+            
             for(int i = 0; i<lib->count; i++){
                 soma+= lib->docs[i].size;
             }
@@ -231,7 +230,6 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
 
     //se a biblioteca está vazia, cria a area de dados e o diretorio
     if(lib->count == 0){
-        printf("Entrou aqui\n");
 
         lib->docs[lib->count] = doc;
 
@@ -254,7 +252,7 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
 
         // Se existe o documento, este é substituido
         if(existeDocumento){
-            printf("Entrou no if\n");
+            
             fseek(biblioteca, -(lib->count * sizeof(Document)), SEEK_END);
             int offsetDocumento = 0;
             int offsetDiretorio = 0;
@@ -283,8 +281,7 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
             fseek(biblioteca, offsetDiretorio, SEEK_SET);
             fwrite(aux, sizeof(Document),lib->count, biblioteca);
 
-            free(buffer);
-            free(aux);
+        
 
             return 0;
 
@@ -308,9 +305,8 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
             fwrite(&(lib->docs[lib->count]), sizeof(Document), 1, biblioteca);
 
                     
-            free(aux);
         }
-
+        free(aux);
     }
 
     free(buffer);
@@ -321,13 +317,9 @@ int gbv_add(Library *lib, const char *archive, const char *docname){
     bytes = fwrite(&(lib->count), sizeof(int), 1, biblioteca);
 
     long offset = sizeof(int) + sizeof(long) + soma + lib->docs[lib->count-1].size;
-    printf("Soma: %ld\n", soma);
-    printf("Offset: %ld\n", offset);
 
     fwrite(&offset, sizeof(long), 1, biblioteca);
 
-    printf("%d\n", lib->count);
-    
     return 0;
 
 }
@@ -375,103 +367,74 @@ int gbv_remove(Library *lib, const char *docname){
         fwrite(&quantidadeDocs, sizeof(int), 1, biblioteca);
         fwrite(&offset, sizeof(long), 1, biblioteca);
 
-        // fwrite(&aux, 1, lib->docs[0].size, biblioteca);
-        // fwrite(&aux, sizeof(Document), 1, biblioteca);
+        // Escreve uma struct doc vazia apenas para representar que não tem documentos
+        lib->docs[0] = doc_create(NULL, offset);
+        fwrite(&lib->docs[0], sizeof(Document), 1, biblioteca);
+
         
     } else {
-        Document docExcluido = lib->docs[cont];
-        
-        // Traz todo mundo para trás
-        for(int j = cont; j < lib->count-1; j++){
-            lib->docs[j] = lib->docs[j+1];
-        }
-        // coloca o item que desejamos excluir na ultima posicao do vetor
-        lib->docs[lib->count-1] = docExcluido;
-
-        // Diminui a quantidade de documentos
-        quantidadeDocs = lib->count-1;
-
-        fseek(biblioteca, 4, SEEK_SET);
-        fread(&offset, sizeof(long), 1, biblioteca);
-
-        rewind(biblioteca);
-
-        mover(lib, biblioteca, lib->docs[cont].offset, lib->docs[cont].offset+lib->docs[cont].size, offset-lib->docs[cont].offset);
-
-        int i = cont+1;
-        while(i < lib->count){
-            rewind(biblioteca);
-            mover(lib, biblioteca, lib->docs[i].offset, lib->docs[i].offset+lib->docs[i].size, -lib->docs[cont].size);
-            i++;
-        }
-        
-        offset -= lib->docs[cont].size;
+        // Se o Documento que queremos excluir está na ultima possição do vetor
+        if(cont == lib->count-1){
+            fseek(biblioteca, 4, SEEK_SET);
+            fread(&offset, sizeof(long), 1, biblioteca);
             
-        rewind(biblioteca);
+            offset -= lib->docs[cont].size;
 
-        fwrite(&quantidadeDocs, sizeof(int), 1, biblioteca);
-        fwrite(&offset, sizeof(long), 1, biblioteca);
+            quantidadeDocs = lib->count - 1;
+                        
+            rewind(biblioteca);
+            fwrite(&quantidadeDocs, sizeof(int), 1, biblioteca);
+            fwrite(&offset, sizeof(long), 1, biblioteca);
 
-        fseek(biblioteca, offset, SEEK_SET);
-        fwrite(&lib->docs, sizeof(Document), quantidadeDocs, biblioteca);
+            fseek(biblioteca, offset, SEEK_SET);
+            fwrite(lib->docs, sizeof(Document), quantidadeDocs, biblioteca);
+
+        } else {
+
+            Document docExcluido = lib->docs[cont];
+            
+            fseek(biblioteca, 4, SEEK_SET);
+            fread(&offset, sizeof(long), 1, biblioteca);
+
+            rewind(biblioteca);
+
+            // Coloca o item que desejamos excluir na ultima posicao da area de dados
+            mover(biblioteca, lib->docs[cont].offset, lib->docs[cont].offset+lib->docs[cont].size, offset-lib->docs[cont].offset);
+
+            int i = cont+1;
+            while(i < lib->count){
+                rewind(biblioteca);
+                // Move os dados que estão na frente para trás
+                mover(biblioteca, lib->docs[i].offset, lib->docs[i].offset + lib->docs[i].size, -lib->docs[cont].size);
+                // atualiza o offset de todo mundo
+                lib->docs[i].offset -= lib->docs[cont].size;
+                i++;
+            }
+
+            // Diminui a quantidade de documentos
+            quantidadeDocs = lib->count-1;
+            offset -= lib->docs[cont].size;
+            
+            rewind(biblioteca);
+
+            fwrite(&quantidadeDocs, sizeof(int), 1, biblioteca);
+            fwrite(&offset, sizeof(long), 1, biblioteca);
+
+            // Traz todo mundo para trás
+            for(int j = cont; j < lib->count-1; j++){
+                lib->docs[j] = lib->docs[j+1];
+            }
+
+            // coloca o item que desejamos excluir na ultima posicao do vetor
+            lib->docs[lib->count-1] = docExcluido;
+
+            fseek(biblioteca, offset, SEEK_SET);
+            fwrite(&lib->docs, sizeof(Document), quantidadeDocs, biblioteca);
+        }
     }
 
     lib->count--;
 
-
-
-
-    offset -= lib->docs[cont].size;
-
-    
-    // int i = cont;
-    // while(i < lib->count){
-    //     mover(lib, biblioteca, lib->docs[cont].offset, lib->docs[cont].offset+lib->docs[cont].size, -1);
-    //     i++;
-    // }
-
-    // int quantidadeDocs = 0;
-    // long offset = 12;
-    // char aux = 0;
-
-    // if (lib->count == 1){
-    //     // Se a biblioteca só tem um elemento, zera a quantidade de arquivos e coloca o offset em 12 
-    //     rewind(biblioteca);
-    //     fwrite(&quantidadeDocs, sizeof(int), 1, biblioteca);
-    //     fwrite(&offset, sizeof(long), 1, biblioteca);
-
-    //     // fwrite(&aux, 1, lib->docs[0].size, biblioteca);
-    //     // fwrite(&aux, sizeof(Document), 1, biblioteca);
-        
-    // } else {
-
-    //     Document docExcluido = lib->docs[cont];
-        
-    //     // Calcula o offset da area de diretorio
-    //     for(int i = 0; i<lib->count; i++){
-    //         offset+=lib->docs[i].size;
-    //     }
-    //     offset = offset - docExcluido.size;
-
-    //     // Traz todo mundo para trás
-    //     for(int j = cont; j < lib->count-1; j++){
-    //         lib->docs[j] = lib->docs[j+1];
-    //     }
-    //     // coloca o item que desejamos excluir na ultima posicao do vetor
-    //     lib->docs[lib->count-1] = docExcluido;
-
-    //     // Diminui a quantidade de documentos
-    //     quantidadeDocs = lib->count-1;
-    
-    //     rewind(biblioteca);
-    //     fwrite(&quantidadeDocs, sizeof(int), 1, biblioteca);
-    //     fwrite(&offset, sizeof(long), 1, biblioteca);
-
-    //     mover(biblioteca, docExcluido.offset, offset, docExcluido.size);
-
-    // }
-
-    // lib->count--;
     return 0;
 }
 
